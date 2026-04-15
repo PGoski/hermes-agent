@@ -922,6 +922,7 @@ def _setup_tts_provider(config: dict):
         "openai": "OpenAI TTS",
         "minimax": "MiniMax TTS",
         "mistral": "Mistral Voxtral TTS",
+        "chatterbox": "Chatterbox",
         "neutts": "NeuTTS",
     }
     current_label = provider_labels.get(current_provider, current_provider)
@@ -943,10 +944,11 @@ def _setup_tts_provider(config: dict):
             "OpenAI TTS (good quality, needs API key)",
             "MiniMax TTS (high quality with voice cloning, needs API key)",
             "Mistral Voxtral TTS (multilingual, native Opus, needs API key)",
+            "Chatterbox (voice cloning, local or server, no API key)",
             "NeuTTS (local on-device, free, ~300MB model download)",
         ]
     )
-    providers.extend(["edge", "elevenlabs", "openai", "minimax", "mistral", "neutts"])
+    providers.extend(["edge", "elevenlabs", "openai", "minimax", "mistral", "chatterbox", "neutts"])
     choices.append(f"Keep current ({current_label})")
     keep_current_idx = len(choices) - 1
     idx = prompt_choice("Select TTS provider:", choices, keep_current_idx)
@@ -1035,6 +1037,22 @@ def _setup_tts_provider(config: dict):
             else:
                 print_warning("No API key provided. Falling back to Edge TTS.")
                 selected = "edge"
+
+    elif selected == "chatterbox":
+        mode_choices = ["Local (on-device inference)", "Server (HTTP API)"]
+        mode_idx = prompt_choice("Chatterbox deployment mode:", mode_choices, 0)
+        mode = "local" if mode_idx == 0 else "server"
+        config.setdefault("tts", {})["chatterbox"] = {"mode": mode}
+        if mode == "server":
+            url = input("Chatterbox server URL [http://localhost:7860]: ").strip()
+            config["tts"]["chatterbox"]["url"] = url or "http://localhost:7860"
+        ref = input("Voice reference audio path (leave empty for default voice): ").strip()
+        if ref:
+            config["tts"]["chatterbox"]["ref_audio"] = ref
+        model_choices = ["original (500M, best quality)", "turbo (350M, fastest)", "multilingual (500M, 23 languages)"]
+        model_idx = prompt_choice("Model variant:", model_choices, 0)
+        model = ["original", "turbo", "multilingual"][model_idx]
+        config["tts"]["chatterbox"]["model"] = model
 
     # Save the selection
     if "tts" not in config:
