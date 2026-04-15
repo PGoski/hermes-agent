@@ -10,7 +10,7 @@ Hermes Agent supports both text-to-speech output and voice message transcription
 
 ## Text-to-Speech
 
-Convert text to speech with six providers:
+Convert text to speech with seven providers:
 
 | Provider | Quality | Cost | API Key |
 |----------|---------|------|---------|
@@ -19,6 +19,7 @@ Convert text to speech with six providers:
 | **OpenAI TTS** | Good | Paid | `VOICE_TOOLS_OPENAI_KEY` |
 | **MiniMax TTS** | Excellent | Paid | `MINIMAX_API_KEY` |
 | **Mistral (Voxtral TTS)** | Excellent | Paid | `MISTRAL_API_KEY` |
+| **Chatterbox** | Good | Free | None needed |
 | **NeuTTS** | Good | Free | None needed |
 
 ### Platform Delivery
@@ -35,7 +36,7 @@ Convert text to speech with six providers:
 ```yaml
 # In ~/.hermes/config.yaml
 tts:
-  provider: "edge"              # "edge" | "elevenlabs" | "openai" | "minimax" | "mistral" | "neutts"
+  provider: "edge"              # "edge" | "elevenlabs" | "openai" | "minimax" | "mistral" | "chatterbox" | "neutts"
   speed: 1.0                    # Global speed multiplier (provider-specific settings override this)
   edge:
     voice: "en-US-AriaNeural"   # 322 voices, 74 languages
@@ -57,6 +58,15 @@ tts:
   mistral:
     model: "voxtral-mini-tts-2603"
     voice_id: "c69964a6-ab8b-4f8a-9465-ec0925096ec8"  # Paul - Neutral (default)
+  chatterbox:
+    mode: local                  # "local" (on-device) or "server" (HTTP API)
+    model: original              # "original", "turbo", or "multilingual"
+    ref_audio: ""                # Path to voice reference WAV (enables cloning)
+    exaggeration: 0.5            # 0.0–2.0, emotion/expression intensity
+    cfg_weight: 0.5              # 0.0–1.0, classifier-free guidance strength
+    temperature: 0.8             # Sampling temperature
+    language_id: en              # Language (multilingual model only)
+    url: http://localhost:7860   # Server mode URL
   neutts:
     ref_audio: ''
     ref_text: ''
@@ -73,6 +83,7 @@ Telegram voice bubbles require Opus/OGG audio format:
 - **OpenAI, ElevenLabs, and Mistral** produce Opus natively — no extra setup
 - **Edge TTS** (default) outputs MP3 and needs **ffmpeg** to convert:
 - **MiniMax TTS** outputs MP3 and needs **ffmpeg** to convert for Telegram voice bubbles
+- **Chatterbox** outputs WAV and needs **ffmpeg** to convert for Telegram voice bubbles
 - **NeuTTS** outputs WAV and also needs **ffmpeg** to convert for Telegram voice bubbles
 
 ```bash
@@ -86,7 +97,7 @@ brew install ffmpeg
 sudo dnf install ffmpeg
 ```
 
-Without ffmpeg, Edge TTS, MiniMax TTS, and NeuTTS audio are sent as regular audio files (playable, but shown as a rectangular player instead of a voice bubble).
+Without ffmpeg, Edge TTS, MiniMax TTS, Chatterbox, and NeuTTS audio are sent as regular audio files (playable, but shown as a rectangular player instead of a voice bubble).
 
 :::tip
 If you want voice bubbles without installing ffmpeg, switch to the OpenAI, ElevenLabs, or Mistral provider.

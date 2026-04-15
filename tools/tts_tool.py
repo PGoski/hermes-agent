@@ -2,13 +2,14 @@
 """
 Text-to-Speech Tool Module
 
-Supports six TTS providers:
+Supports seven TTS providers:
 - Edge TTS (default, free, no API key): Microsoft Edge neural voices
 - ElevenLabs (premium): High-quality voices, needs ELEVENLABS_API_KEY
 - OpenAI TTS: Good quality, needs OPENAI_API_KEY
 - MiniMax TTS: High-quality with voice cloning, needs MINIMAX_API_KEY
 - Mistral (Voxtral TTS): Multilingual, native Opus, needs MISTRAL_API_KEY
 - NeuTTS (local, free, no API key): On-device TTS via neutts_cli, needs neutts installed
+- Chatterbox (local or server, voice cloning): Open-source voice cloning TTS by Resemble AI
 
 Output formats:
 - Opus (.ogg) for Telegram voice bubbles (requires ffmpeg for Edge TTS)
@@ -50,6 +51,11 @@ from tools.tool_backend_helpers import managed_nous_tools_enabled, resolve_opena
 # Lazy imports -- providers are imported only when actually used to avoid
 # crashing in headless environments (SSH, Docker, WSL, no PortAudio).
 # ---------------------------------------------------------------------------
+
+def _import_chatterbox_provider():
+    """Lazy import Chatterbox provider module."""
+    from tools.chatterbox_tts_provider import generate_chatterbox_tts
+    return generate_chatterbox_tts
 
 def _import_edge_tts():
     """Lazy import edge_tts. Returns the module or raises ImportError."""
@@ -622,6 +628,19 @@ def text_to_speech_tool(
             logger.info("Generating speech with NeuTTS (local)...")
             _generate_neutts(text, file_str, tts_config)
 
+        elif provider == "chatterbox":
+            try:
+                _gen_cb = _import_chatterbox_provider()
+            except ImportError:
+                return json.dumps({
+                    "success": False,
+                    "error": "Chatterbox provider selected but module not available. "
+                             "Install chatterbox-tts (pip install chatterbox-tts) for local mode, "
+                             "or configure server mode with tts.chatterbox.url."
+                }, ensure_ascii=False)
+            logger.info("Generating speech with Chatterbox TTS...")
+            _gen_cb(text, file_str, tts_config)
+
         else:
             # Default: Edge TTS (free), with NeuTTS as local fallback
             edge_available = True
@@ -661,7 +680,7 @@ def text_to_speech_tool(
         # Try Opus conversion for Telegram compatibility
         # Edge TTS outputs MP3, NeuTTS outputs WAV — both need ffmpeg conversion
         voice_compatible = False
-        if provider in ("edge", "neutts", "minimax") and not file_str.endswith(".ogg"):
+        if provider in ("edge", "neutts", "minimax", "chatterbox") and not file_str.endswith(".ogg"):
             opus_path = _convert_to_opus(file_str)
             if opus_path:
                 file_str = opus_path
@@ -742,6 +761,11 @@ def check_tts_requirements() -> bool:
         pass
     if _check_neutts_available():
         return True
+    try:
+        _import_chatterbox_provider()
+        return True
+    except ImportError:
+        pass
     return False
 
 

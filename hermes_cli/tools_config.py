@@ -164,6 +164,13 @@ TOOL_CATEGORIES = {
                 ],
                 "tts_provider": "mistral",
             },
+            {
+                "name": "Chatterbox",
+                "badge": "free · local",
+                "tag": "Open-source voice cloning (local or server)",
+                "env_vars": [],
+                "tts_provider": "chatterbox",
+            },
         ],
     },
     "web": {
